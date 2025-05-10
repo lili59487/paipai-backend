@@ -1,11 +1,13 @@
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
-import sqlite3
+# import sqlite3  # 移除 SQLite
 import os
 import re
 import logging
 import json
 import unicodedata
+import psycopg2  # 新增 psycopg2
+from psycopg2.extras import RealDictCursor  # 讓回傳結果像 dict
 
 # 設置日誌
 logging.basicConfig(level=logging.DEBUG)
@@ -14,12 +16,12 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__, static_folder='../frontend')
 CORS(app)
 
-# 資料庫路徑
-DB_PATH = os.path.join(os.path.dirname(__file__), 'crop_usage.db')
+# PostgreSQL 連線設定
+DB_URL = os.getenv('DATABASE_URL')  # 從環境變數取得連線字串
 
 def get_db_connection():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
+    # 連接 PostgreSQL，回傳 cursor
+    conn = psycopg2.connect(DB_URL, cursor_factory=RealDictCursor)
     return conn
 
 def normalize_pest_name(name):
@@ -144,6 +146,7 @@ def search_pesticides():
 
         # 組合最終結果
         final_results = results[:5]  # 限制最多只回傳五筆資料給前端
+        # 備註：因 Render 有資料送出限制，這裡只回傳前五筆資料
 
         # 將所有結果中的 matchSet 從 set 轉換為 list
         for result in final_results:
