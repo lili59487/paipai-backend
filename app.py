@@ -143,7 +143,7 @@ def search_pesticides():
         conn.close()
 
         # 組合最終結果
-        final_results = results
+        final_results = results[:5]  # 限制最多只回傳五筆資料給前端
 
         # 將所有結果中的 matchSet 從 set 轉換為 list
         for result in final_results:
