@@ -182,7 +182,7 @@ def handle_crop_pests_intersection(cursor, crop_keywords, pest_keywords):
     for crop in crop_keywords:
         all_pesticides = set()
         for pest in pest_keywords:
-            cursor.execute("SELECT DISTINCT 中文名稱, 劑型, 含量 FROM crop_usage WHERE 作物名稱 = ? AND 病蟲害名稱 LIKE ?", (crop, f"%{pest}%"))
+            cursor.execute("SELECT DISTINCT 中文名稱, 劑型, 含量 FROM crop_usage WHERE 作物名稱 = %s AND 病蟲害名稱 LIKE %s", (crop, f"%{pest}%"))
             rows = cursor.fetchall()
             pesticides = {f"{row['中文名稱']}__{row['劑型']}__{row['含量']}" for row in rows}
             if not all_pesticides:
@@ -199,7 +199,7 @@ def handle_crop_pests_intersection(cursor, crop_keywords, pest_keywords):
         else:
             all_rows = []
             for pest in pest_keywords:
-                cursor.execute("SELECT * FROM crop_usage WHERE 作物名稱 = ? AND 病蟲害名稱 LIKE ?", (crop, f"%{pest}%"))
+                cursor.execute("SELECT * FROM crop_usage WHERE 作物名稱 = %s AND 病蟲害名稱 LIKE %s", (crop, f"%{pest}%"))
                 all_rows.extend(cursor.fetchall())
             unique_pesticides = [
                 p for p in remove_duplicate_pesticides([{
@@ -237,7 +237,7 @@ def handle_crop_pests_intersection(cursor, crop_keywords, pest_keywords):
 def handle_crop_single_pest(cursor, crop_keywords, pest):
     results = []
     for crop in crop_keywords:
-        cursor.execute("SELECT * FROM crop_usage WHERE 作物名稱 = ? AND 病蟲害名稱 LIKE ?", (crop, f"%{pest}%"))
+        cursor.execute("SELECT * FROM crop_usage WHERE 作物名稱 = %s AND 病蟲害名稱 LIKE %s", (crop, f"%{pest}%"))
         rows = cursor.fetchall()
         if not rows:
             results.append({
@@ -285,13 +285,13 @@ def handle_crop_mixed_keywords(cursor, crop_keywords, mixed_keywords, all_chems,
     for crop in crop_keywords:
         for kw in mixed_keywords:
             if kw in all_chems:
-                cursor.execute("SELECT * FROM crop_usage WHERE 作物名稱 = ? AND 中文名稱 = ?", (crop, kw))
+                cursor.execute("SELECT * FROM crop_usage WHERE 作物名稱 = %s AND 中文名稱 = %s", (crop, kw))
                 kw_type = 'chem'
             elif kw in all_brands:
-                cursor.execute("SELECT * FROM crop_usage WHERE 作物名稱 = ? AND 廠牌名稱 = ?", (crop, kw))
+                cursor.execute("SELECT * FROM crop_usage WHERE 作物名稱 = %s AND 廠牌名稱 = %s", (crop, kw))
                 kw_type = 'brand'
             elif kw in all_barcodes:
-                cursor.execute("SELECT * FROM crop_usage WHERE 作物名稱 = ? AND 條碼 = ?", (crop, kw))
+                cursor.execute("SELECT * FROM crop_usage WHERE 作物名稱 = %s AND 條碼 = %s", (crop, kw))
                 kw_type = 'barcode'
             else:
                 continue
@@ -302,7 +302,7 @@ def handle_crop_mixed_keywords(cursor, crop_keywords, mixed_keywords, all_chems,
                     display_name = kw
                     error_message = f"{display_name} 無法使用於作物：{crop}"
                 elif kw_type == 'brand':
-                    cursor.execute("SELECT DISTINCT 中文名稱 FROM crop_usage WHERE 廠牌名稱 = ?", (kw,))
+                    cursor.execute("SELECT DISTINCT 中文名稱 FROM crop_usage WHERE 廠牌名稱 = %s", (kw,))
                     chems = [row['中文名稱'] for row in cursor.fetchall()]
                     if chems:
                         display_name = f"{chems[0]}（{kw}）"
@@ -310,7 +310,7 @@ def handle_crop_mixed_keywords(cursor, crop_keywords, mixed_keywords, all_chems,
                         display_name = f"（{kw}）"
                     error_message = f"{display_name} 無法使用於作物：{crop}"
                 elif kw_type == 'barcode':
-                    cursor.execute("SELECT 中文名稱, 廠牌名稱 FROM crop_usage WHERE 條碼 = ?", (kw,))
+                    cursor.execute("SELECT 中文名稱, 廠牌名稱 FROM crop_usage WHERE 條碼 = %s", (kw,))
                     row = cursor.fetchone()
                     if row:
                         display_name = f"{row['中文名稱']}（{row['廠牌名稱']}） 條碼：{kw}"
@@ -442,7 +442,7 @@ def handle_crop_mixed_keywords(cursor, crop_keywords, mixed_keywords, all_chems,
 def handle_crop_only(cursor, crop_keywords):
     results = []
     for crop in crop_keywords:
-        cursor.execute("SELECT * FROM crop_usage WHERE 作物名稱 = ?", (crop,))
+        cursor.execute("SELECT * FROM crop_usage WHERE 作物名稱 = %s", (crop,))
         rows = cursor.fetchall()
         pesticide_map = {}
         for row in rows:
@@ -473,7 +473,7 @@ def handle_crop_only(cursor, crop_keywords):
 def handle_chem_only(cursor, chem_keywords):
     results = []
     for chem in chem_keywords:
-        cursor.execute("SELECT * FROM crop_usage WHERE 中文名稱 = ?", (chem,))
+        cursor.execute("SELECT * FROM crop_usage WHERE 中文名稱 = %s", (chem,))
         rows = cursor.fetchall()
         pesticide_map = {}
         for row in rows:
@@ -506,7 +506,7 @@ def handle_chem_only(cursor, chem_keywords):
 def handle_brand_only(cursor, brand_keywords):
     results = []
     for brand in brand_keywords:
-        cursor.execute("SELECT * FROM crop_usage WHERE 廠牌名稱 = ?", (brand,))
+        cursor.execute("SELECT * FROM crop_usage WHERE 廠牌名稱 = %s", (brand,))
         rows = cursor.fetchall()
         pesticide_map = {}
         for row in rows:
@@ -538,7 +538,7 @@ def handle_brand_only(cursor, brand_keywords):
 def handle_barcode_only(cursor, barcode_keywords):
     results = []
     for barcode in barcode_keywords:
-        cursor.execute("SELECT * FROM crop_usage WHERE 條碼 = ?", (barcode,))
+        cursor.execute("SELECT * FROM crop_usage WHERE 條碼 = %s", (barcode,))
         rows = cursor.fetchall()
         pesticide_map = {}
         for row in rows:
@@ -571,7 +571,7 @@ def handle_fallback_partial_match(cursor, other_keywords):
     results = []
     for kw in other_keywords:
         cursor.execute(
-            "SELECT * FROM crop_usage WHERE 作物名稱 LIKE ? OR 病蟲害名稱 LIKE ? OR 中文名稱 LIKE ? OR 廠牌名稱 LIKE ? OR 條碼 LIKE ?",
+            "SELECT * FROM crop_usage WHERE 作物名稱 LIKE %s OR 病蟲害名稱 LIKE %s OR 中文名稱 LIKE %s OR 廠牌名稱 LIKE %s OR 條碼 LIKE %s",
             tuple([f"%{kw}%"] * 5)
         )
         rows = cursor.fetchall()
