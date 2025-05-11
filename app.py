@@ -371,7 +371,11 @@ def handle_crop_mixed_keywords(cursor, crop_keywords, mixed_keywords, all_chems,
             results.extend(pesticide_map.values())
 
     # 第二步：建立重複病蟲害名稱的字典
-    duplicate_pests = set()
+    duplicate_pests = {}  # 改用字典來儲存每個病蟲害對應的標記符號
+    
+    # 定義標記符號列表
+    mark_symbols = ['#', '@', '%', '&', '*', '+', '=', '~', '^', '!']
+    symbol_index = 0
 
     # 比較不同中文名稱農藥之間的病蟲害名稱
     chem_names = list(pest_names_by_chem.keys())
@@ -379,12 +383,13 @@ def handle_crop_mixed_keywords(cursor, crop_keywords, mixed_keywords, all_chems,
         for j in range(i + 1, len(chem_names)):
             chem1 = chem_names[i]
             chem2 = chem_names[j]
-            pests1 = pest_names_by_chem.get(chem1, [])
-            pests2 = pest_names_by_chem.get(chem2, [])
+            pests1 = pest_names_by_chem.get(chem1, set())
+            pests2 = pest_names_by_chem.get(chem2, set())
 
             if not pests1 or not pests2:
                 continue
 
+            # 找出兩個農藥之間共同的病蟲害
             common_pests = set()
             for pest1 in pests1:
                 for pest2 in pests2:
@@ -397,19 +402,28 @@ def handle_crop_mixed_keywords(cursor, crop_keywords, mixed_keywords, all_chems,
                         common_pests.add(pest1)
                         common_pests.add(pest2)
 
-            duplicate_pests.update(common_pests)
+            # 為這對農藥的共通病蟲害設定標記符號
+            if common_pests:  # 只有在找到共同病蟲害時才使用新的符號
+                mark_symbol = mark_symbols[symbol_index % len(mark_symbols)]
+                symbol_index += 1
+                for pest in common_pests:
+                    if pest not in duplicate_pests:
+                        duplicate_pests[pest] = set()
+                    duplicate_pests[pest].add(mark_symbol)
 
-    print(f"\n需要標記的病蟲害名稱: {duplicate_pests}")
+        print(f"\n需要標記的病蟲害名稱: {duplicate_pests}")
 
-    # 第三步：標記重複的病蟲害名稱
-    marked_count = 0
-    for result in results:
-        if isinstance(result, dict) and not result.get('no_match'):
-            for usage in result.get('usages', []):
-                pest_name = usage.get('病蟲害名稱', '')
-                if pest_name in duplicate_pests:
-                    usage['病蟲害名稱'] = f"#{pest_name}"
-                    marked_count += 1
+        # 第三步：標記重複的病蟲害名稱
+        marked_count = 0
+        for result in results:
+            if isinstance(result, dict) and not result.get('no_match'):
+                for usage in result.get('usages', []):
+                    pest_name = usage.get('病蟲害名稱', '')
+                    if pest_name in duplicate_pests:
+                        # 將所有標記符號組合在一起
+                        marks = ''.join(sorted(duplicate_pests[pest_name]))
+                        usage['病蟲害名稱'] = f"{marks} {pest_name}"
+                        marked_count += 1
 
     # 只有在符合條件時才添加提示卡片：
     # 1. 是作物+中文名稱(農藥)/廠牌名稱/條碼卡片的搜尋
