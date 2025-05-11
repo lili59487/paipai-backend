@@ -372,42 +372,42 @@ def handle_crop_mixed_keywords(cursor, crop_keywords, mixed_keywords, all_chems,
             results.extend(pesticide_map.values())
 
     # 第二步：建立重複病蟲害名稱的字典
-    duplicate_pests = set()
-    chem_names = list(pest_names_by_chem.keys())
-    
-    print("\n收集到的農藥和病蟲害名稱:")
-    for chem, pests in pest_names_by_chem.items():
-        print(f"農藥: {chem}")
-        print(f"病蟲害: {pests}")
-    
+    pest_markers = {}  # 用於儲存每個病蟲害的標記符號
+    marker_index = 0
+    markers = ['#', '@', '$', '%', '&', '*']  # 可用的標記符號
+
     # 比較不同中文名稱農藥之間的病蟲害名稱
+    chem_names = list(pest_names_by_chem.keys())
     for i in range(len(chem_names)):
         for j in range(i + 1, len(chem_names)):
             chem1 = chem_names[i]
             chem2 = chem_names[j]
-            pests1 = pest_names_by_chem[chem1]
-            pests2 = pest_names_by_chem[chem2]
-            
-            print(f"\n比較農藥: {chem1} vs {chem2}")
-            print(f"{chem1}的病蟲害: {pests1}")
-            print(f"{chem2}的病蟲害: {pests2}")
-            
-            # 檢查兩個農藥之間的相似病蟲害名稱
+            pests1 = pest_names_by_chem.get(chem1, set())
+            pests2 = pest_names_by_chem.get(chem2, set())
+
+            if not pests1 or not pests2:
+                continue
+
+            # 找出兩個農藥之間共同的病蟲害
+            common_pests = set()
             for pest1 in pests1:
                 for pest2 in pests2:
-                    if pest1 == pest2:  # 完全相同的病蟲害名稱
-                        print(f"發現相同病蟲害: {pest1}")
-                        duplicate_pests.add(pest1)
-                    elif pest1 != pest2 and (
-                        pest1 in pest2 or  # 例如：稻熱病 包含在 葉稻熱病 中
-                        pest2 in pest1 or  # 例如：葉稻熱病 包含 稻熱病
-                        pest1.replace('葉', '') == pest2.replace('葉', '')  # 例如：稻熱病 和 葉稻熱病 相似
+                    if (
+                        pest1 == pest2 or
+                        pest1 in pest2 or
+                        pest2 in pest1 or
+                        pest1.replace('葉', '') == pest2.replace('葉', '')
                     ):
-                        print(f"發現相似病蟲害: {pest1} 和 {pest2}")
-                        duplicate_pests.add(pest1)
-                        duplicate_pests.add(pest2)
+                        common_pests.add(pest1)
+                        common_pests.add(pest2)
 
-    print(f"\n需要標記的病蟲害名稱: {duplicate_pests}")
+            # 為這組配對的病蟲害分配標記符號
+            if common_pests:
+                current_marker = markers[marker_index % len(markers)]
+                marker_index += 1
+                for pest in common_pests:
+                    if pest not in pest_markers:
+                        pest_markers[pest] = current_marker
 
     # 第三步：標記重複的病蟲害名稱
     marked_count = 0
