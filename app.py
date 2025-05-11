@@ -373,27 +373,19 @@ def handle_crop_mixed_keywords(cursor, crop_keywords, mixed_keywords, all_chems,
 
     # 第二步：建立重複病蟲害名稱的字典
     duplicate_pests = set()
-    chem_names = list(pest_names_by_chem.keys())
-    
-    print("\n收集到的農藥和病蟲害名稱:")
-    for chem, pests in pest_names_by_chem.items():
-        print(f"農藥: {chem}")
-        print(f"病蟲害: {pests}")
-    
+
     # 比較不同中文名稱農藥之間的病蟲害名稱
     chem_names = list(pest_names_by_chem.keys())
     for i in range(len(chem_names)):
         for j in range(i + 1, len(chem_names)):
             chem1 = chem_names[i]
             chem2 = chem_names[j]
-            pests1 = pest_names_by_chem[chem1]
-            pests2 = pest_names_by_chem[chem2]
+            pests1 = pest_names_by_chem.get(chem1, [])
+            pests2 = pest_names_by_chem.get(chem2, [])
 
-            print(f"\n比較農藥: {chem1} vs {chem2}")
-            print(f"{chem1}的病蟲害: {pests1}")
-            print(f"{chem2}的病蟲害: {pests2}")
+            if not pests1 or not pests2:
+                continue
 
-            # 使用集合運算來簡化比較
             common_pests = set()
             for pest1 in pests1:
                 for pest2 in pests2:
@@ -405,9 +397,7 @@ def handle_crop_mixed_keywords(cursor, crop_keywords, mixed_keywords, all_chems,
                     ):
                         common_pests.add(pest1)
                         common_pests.add(pest2)
-                        print(f"發現相同或相似病蟲害: {pest1} / {pest2}")
-            
-            # 將找到的共同病蟲害加入結果集
+
             duplicate_pests.update(common_pests)
 
     print(f"\n需要標記的病蟲害名稱: {duplicate_pests}")
