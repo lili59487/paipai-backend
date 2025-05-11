@@ -6,6 +6,7 @@ import re
 import logging
 import json
 import unicodedata
+from itertools import combinations
 
 # 設置日誌
 logging.basicConfig(level=logging.DEBUG)
@@ -18,7 +19,7 @@ CORS(app)
 DB_PATH = os.path.join(os.path.dirname(__file__), 'crop_usage.db')
 
 def get_db_connection():
-    conn = sqlite3.connect('/data/crop_usage.db')
+    conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -380,31 +381,30 @@ def handle_crop_mixed_keywords(cursor, crop_keywords, mixed_keywords, all_chems,
         print(f"病蟲害: {pests}")
     
     # 比較不同中文名稱農藥之間的病蟲害名稱
-    for i in range(len(chem_names)):
-        for j in range(i + 1, len(chem_names)):
-            chem1 = chem_names[i]
-            chem2 = chem_names[j]
-            pests1 = pest_names_by_chem[chem1]
-            pests2 = pest_names_by_chem[chem2]
-            
-            print(f"\n比較農藥: {chem1} vs {chem2}")
-            print(f"{chem1}的病蟲害: {pests1}")
-            print(f"{chem2}的病蟲害: {pests2}")
-            
-            # 檢查兩個農藥之間的相似病蟲害名稱
-            for pest1 in pests1:
-                for pest2 in pests2:
-                    if pest1 == pest2:  # 完全相同的病蟲害名稱
-                        print(f"發現相同病蟲害: {pest1}")
-                        duplicate_pests.add(pest1)
-                    elif pest1 != pest2 and (
-                        pest1 in pest2 or  # 例如：稻熱病 包含在 葉稻熱病 中
-                        pest2 in pest1 or  # 例如：葉稻熱病 包含 稻熱病
-                        pest1.replace('葉', '') == pest2.replace('葉', '')  # 例如：稻熱病 和 葉稻熱病 相似
-                    ):
-                        print(f"發現相似病蟲害: {pest1} 和 {pest2}")
-                        duplicate_pests.add(pest1)
-                        duplicate_pests.add(pest2)
+    for chem1, chem2 in combinations(pest_names_by_chem.keys(), 2):
+        pests1 = pest_names_by_chem[chem1]
+        pests2 = pest_names_by_chem[chem2]
+
+        print(f"\n比較農藥: {chem1} vs {chem2}")
+        print(f"{chem1}的病蟲害: {pests1}")
+        print(f"{chem2}的病蟲害: {pests2}")
+
+        # 使用集合運算來簡化比較
+        common_pests = set()
+        for pest1 in pests1:
+            for pest2 in pests2:
+                if (
+                    pest1 == pest2 or
+                    pest1 in pest2 or
+                    pest2 in pest1 or
+                    pest1.replace('葉', '') == pest2.replace('葉', '')
+                ):
+                    common_pests.add(pest1)
+                    common_pests.add(pest2)
+                    print(f"發現相同或相似病蟲害: {pest1} / {pest2}")
+        
+        # 將找到的共同病蟲害加入結果集
+        duplicate_pests.update(common_pests)
 
     print(f"\n需要標記的病蟲害名稱: {duplicate_pests}")
 
