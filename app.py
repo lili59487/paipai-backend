@@ -15,8 +15,8 @@ app = Flask(__name__, static_folder='../frontend')
 CORS(app)
 
 # 資料庫路徑
-#DB_PATH = os.path.join(os.path.dirname(__file__), 'crop_usage.db')
-DB_PATH = '/persistent/crop_usage.db'
+DB_PATH = os.path.join(os.path.dirname(__file__), 'crop_usage.db')
+
 
 def get_db_connection():
     conn = sqlite3.connect(DB_PATH)
