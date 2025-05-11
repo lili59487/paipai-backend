@@ -333,7 +333,6 @@ def handle_crop_mixed_keywords(cursor, crop_keywords, mixed_keywords, all_chems,
                 if chem_name not in pest_names_by_chem:
                     pest_names_by_chem[chem_name] = set()
                 pest_names_by_chem[chem_name].add(row['病蟲害名稱'])
-                print(f"收集病蟲害名稱: 農藥={chem_name}, 病蟲害={row['病蟲害名稱']}")
 
             # 下面這段是原本的資料組裝，不要動
             pesticide_map = {}
@@ -411,9 +410,6 @@ def handle_crop_mixed_keywords(cursor, crop_keywords, mixed_keywords, all_chems,
                 if pest_name in duplicate_pests:
                     usage['病蟲害名稱'] = f"#{pest_name}"
                     marked_count += 1
-                    print(f"標記病蟲害: {pest_name} 在農藥 {result.get('raw_chem_name')} 中")
-
-    print(f"\n總共標記了 {marked_count} 個病蟲害名稱")
 
     # 只有在符合條件時才添加提示卡片：
     # 1. 是作物+中文名稱(農藥)/廠牌名稱/條碼卡片的搜尋
@@ -425,7 +421,6 @@ def handle_crop_mixed_keywords(cursor, crop_keywords, mixed_keywords, all_chems,
             'crop': crop_keywords[0] if crop_keywords else '',
             'keyword': ', '.join(mixed_keywords)
         })
-        print("無共同防治的病害，已添加提示卡片")
 
     return results
 
